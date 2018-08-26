@@ -17,9 +17,9 @@ class VPG(agent.Agent):
         std_away = (values - np.mean(values))/(np.std(values) + 1e-8)
         return mean + std * std_away
 
-    def __init__(self, env, network):
+    def __init__(self, env, network_func):
         self.env = env
-        self.network = network
+        self.network = network_func
 
     def train(self, 
               n_iter=100, 
