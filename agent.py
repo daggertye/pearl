@@ -4,3 +4,6 @@ class Agent(object):
 
     def run(self):
         raise NotImplementedError
+
+    def reset(self):
+        raise NotImplementedError

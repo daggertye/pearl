@@ -17,9 +17,13 @@ class VPG(agent.Agent):
         std_away = (values - np.mean(values))/(np.std(values) + 1e-8)
         return mean + std * std_away
 
-    def __init__(self, env, network_func):
+    def __init__(self, env, sess, network_func):
         self.env = env
-        self.network = network_func
+        self.sess = sess
+        self.network_func = network_func
+        
+        self.input = None
+        self.output = None
 
     def train(self, 
               n_iter=100, 
@@ -60,12 +64,12 @@ class VPG(agent.Agent):
 
         # model
         if discrete:
-            sy_logits_na = self.network(sy_ob_no, ac_dim, "policy")
+            sy_logits_na = self.network_func(sy_ob_no, ac_dim, "policy")
             sy_sampled_ac = tf.squeeze(tf.multinomial(sy_logits_na, 1), axis=[1])
             sy_logprob_n = - tf.nn.sparse_softmax_cross_entropy_with_logits(labels=sy_ac_na, logits=sy_logits_na)
 
         else:
-            sy_mean = self.network(sy_ob_no, ac_dim, "policy")
+            sy_mean = self.network_func(sy_ob_no, ac_dim, "policy")
             sy_logstd = tf.Variable(tf.zeros([1, ac_dim], name='logstd'))
             sy_std = tf.exp(sy_logstd)
             sy_z_sampled = tf.random_normal(tf.shape(sy_mean))
@@ -80,7 +84,7 @@ class VPG(agent.Agent):
 
         # baseline nn creation
         if nn_baseline:
-            baseline_prediction = tf.squeeze(self.network(sy_ob_no, 1, "nn_baseline"))
+            baseline_prediction = tf.squeeze(self.network_func(sy_ob_no, 1, "nn_baseline"))
             bl_n = tf.placeholder(shape=[None], name='bl_n', dtype=tf.float32)
             bl_loss = tf.nn.l2_loss(baseline_prediction - bl_n)
             baseline_update_op = tf.train.AdamOptimizer(learning_rate).minimize(bl_loss)
@@ -175,5 +179,24 @@ class VPG(agent.Agent):
             _, after_loss = sess.run([update_op, loss],feed_dict = {sy_ob_no : ob_no, sy_ac_na : ac_na, sy_adv_n : adv_n})
             print(after_loss.shape)
 
+            self.input = sy_ob_no
+            self.output = sy_sampled_ac
+
     def run(self):
-        raise NotImplementedError
+        ob = self.env.reset()
+        steps = 0
+        while True:
+            self.env.render()
+            ac = self.sess.run(self.output, feed_dict={self.input : ob[None]})
+            ac = ac[0]
+            ob, _ , done, _ = self.env.step(ac)
+            if done:
+                break
+
+    def reset(self):
+        self.input = None
+        self.output = None
+
+    def update_network(self, new_network_func):
+        self.reset()
+        self.network_func = new_network_func
