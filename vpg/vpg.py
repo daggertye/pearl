@@ -172,5 +172,8 @@ class VPG(agent.Agent):
                 bl_true = VPG.norm(q_n, 0, 1)
                 _ = sess.run(baseline_update_op, feed_dict={bl_n : bl_true, sy_ob_no : ob_no})
 
+            _, after_loss = sess.run([update_op, loss],feed_dict = {sy_ob_no : ob_no, sy_ac_na : ac_na, sy_adv_n : adv_n})
+            print(after_loss.shape)
+
     def run(self):
         raise NotImplementedError
