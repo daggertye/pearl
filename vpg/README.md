@@ -7,6 +7,7 @@ J is the expected sum of the rewards of a policy. In this case we simply optimiz
 ## Features
 
 | Feature type | Feature |
+| RL type | Single Agent RL |
 | ------------ | ------- |
 | Model? | Yes |
 | Policy? | On |

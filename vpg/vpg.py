@@ -165,7 +165,6 @@ class VPG(agent.Agent):
 
             # normalize advantages (heuristic that helps)
             if normalize_advantages:
-
                 adv_n = VPG.norm(adv_n, 0, 1)
 
             # nn baseline training
