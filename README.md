@@ -6,7 +6,7 @@ This is a host of all of the main rl algorithms I come across. Everything from o
 
 ## Classic algorithms
 
-- [x] VPG/REINFORCE
+- [x] VPG
 
 - [ ] DQN
 
