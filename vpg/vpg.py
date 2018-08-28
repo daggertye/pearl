@@ -17,9 +17,25 @@ class VPG(agent.Agent):
         std_away = (values - np.mean(values))/(np.std(values) + 1e-8)
         return mean + std * std_away
 
-    def __init__(self, env, sess, network_func):
+    def __init__(self, env, network_func, sess=None):
+        """
+        Initializes a vpg agent. 
+
+        Args
+        ----
+            env (gym.Env) :
+                environment to run the agent on, can be discrete or continuous
+
+            network_func (tf.Tensor -> tf.Tensor) :
+                function to take an input tensor to the output tensor. Used to build
+                the policy's neural network function. Input and output should be built
+                for batches (start with [None]).
+
+            sess (tf.Session -- None) :
+                session to run the agent on. If None, then just a plain old session
+        """
         self.env = env
-        self.sess = sess
+        self.sess = tf.Session() if sess is None else sess
         self.network_func = network_func
         
         self.input = None
@@ -33,10 +49,41 @@ class VPG(agent.Agent):
               max_path_length=None,
               learning_rate=5e-3,
               reward_to_go=True,
-              logdir=None,
               normalize_advantages=True,
               nn_baseline=False,
               seed=0):
+        """
+        Initializes the neural network and trains it.
+
+        Params
+        ------
+            n_iter (int -- 100) : 
+                number of iterations to train the network
+
+            gamma (float -- 1.0) :
+                value of gamma (reward discount)
+
+            _lambda (float -- 1.0) :
+                value of lambda (for gae)
+
+            min_timesteps_per_batch (int -- 1000) :
+                minimum number of timesteps required to batch train
+
+            max_path_length (int -- None) :
+                maximum length of path, an integer
+
+            reward_to_go (bool -- True) :
+                train the agent on the future rewards
+
+            normalize_advantage (bool -- True) :
+                normalize the agent to N(0, 1)
+
+            nn_baseline (bool -- False) :
+                use a baseline neural network
+
+            seed (int -- 0) :
+                random seed
+        """
 
         #Set random seed
         tf.set_random_seed(seed)
@@ -183,6 +230,13 @@ class VPG(agent.Agent):
             self.output = sy_sampled_ac
 
     def run(self):
+        """
+        Runs the agent in the environment. Renders the graphics. If model is not trained,
+        nothing happens.
+        """
+        if self.output is None or self.input is None:
+            return
+
         ob = self.env.reset()
         steps = 0
         while True:
@@ -194,9 +248,22 @@ class VPG(agent.Agent):
                 break
 
     def reset(self):
+        """
+        Reset the agent. The agent must be retrained.
+        """
         self.input = None
         self.output = None
 
     def update_network(self, new_network_func):
+        """
+        Change the agent's network.
+
+        Args
+        ----
+            new_network_func (tf.Tensor -> tf.Tensor) :
+                function to take an input tensor to the output tensor. Used to build
+                the policy's neural network function. Input and output should be built
+                for batches (start with [None]).
+        """
         self.reset()
         self.network_func = new_network_func
