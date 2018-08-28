@@ -51,7 +51,8 @@ class VPG(agent.Agent):
               reward_to_go=True,
               normalize_advantages=True,
               nn_baseline=False,
-              seed=0):
+              seed=0,
+              logdir=None):
         """
         Initializes the neural network and trains it.
 
@@ -136,9 +137,14 @@ class VPG(agent.Agent):
             bl_loss = tf.nn.l2_loss(baseline_prediction - bl_n)
             baseline_update_op = tf.train.AdamOptimizer(learning_rate).minimize(bl_loss)
 
+        # writer
+        if logdir:
+            writer = tf.summary.FileWriter(logdir)
+            reward_ph = tf.placeholder(tf.float32, shape=())
+            reward_summ = tf.summary.scalar('avg/reward', reward_ph)
+
         # session
-        sess = tf.Session()
-        sess.__enter__()
+        self.sess.__enter__()
         tf.global_variables_initializer().run()
 
         # training
@@ -156,7 +162,7 @@ class VPG(agent.Agent):
                 steps = 0
                 while True:
                     obs.append(ob)
-                    ac = sess.run(sy_sampled_ac, feed_dict={sy_ob_no : ob[None]})
+                    ac = self.sess.run(sy_sampled_ac, feed_dict={sy_ob_no : ob[None]})
                     ac = ac[0]
                     acs.append(ac)
                     ob, rew, done, _ = self.env.step(ac)
@@ -195,9 +201,13 @@ class VPG(agent.Agent):
                     q = np.ones(shape=[VPG.pathlengh(path)]) * ret_tau
                     q_n.extend(q)
 
+            if logdir:
+                reward_sum = self.sess.run(reward_summ, feed_dict={reward_ph : np.mean(q_n)})
+                writer.add_summary(reward_sum, global_step=itr)
+
             if nn_baseline:
                 # nn baseline
-                b_n = VPG.norm(sess.run(baseline_prediction, feed_dict={sy_ob_no: ob_no}), np.mean(q_n), np.std(q_n))
+                b_n = VPG.norm(self.sess.run(baseline_prediction, feed_dict={sy_ob_no: ob_no}), np.mean(q_n), np.std(q_n))
 
                 # Implementation of GAE
                 adv_n = []
@@ -221,10 +231,9 @@ class VPG(agent.Agent):
             # nn baseline training
             if nn_baseline:
                 bl_true = VPG.norm(q_n, 0, 1)
-                _ = sess.run(baseline_update_op, feed_dict={bl_n : bl_true, sy_ob_no : ob_no})
+                _ = self.sess.run(baseline_update_op, feed_dict={bl_n : bl_true, sy_ob_no : ob_no})
 
-            _, after_loss = sess.run([update_op, loss],feed_dict = {sy_ob_no : ob_no, sy_ac_na : ac_na, sy_adv_n : adv_n})
-            print(after_loss.shape)
+            _, after_loss = self.sess.run([update_op, loss],feed_dict = {sy_ob_no : ob_no, sy_ac_na : ac_na, sy_adv_n : adv_n})
 
             self.input = sy_ob_no
             self.output = sy_sampled_ac
