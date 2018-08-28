@@ -4,4 +4,20 @@ This is a host of all of the main rl algorithms I come across. Everything from o
 
 # TODO
 
--[ ] More algorithms (obviously).
+## Classic algorithms
+
+- [x] VPG/REINFORCE
+
+- [ ] DQN
+
+- [ ] DDPG
+
+- [ ] A3C
+
+- [ ] TRPO
+
+- [ ] PPO
+
+## More algorithms
+
+- [ ] Add more algorithms
