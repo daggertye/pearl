@@ -2,12 +2,24 @@
 import tensorflow as tf
 import numpy as np
 import gym
-import time
 
 #local imports
-import agent
+import pearl.agents.agent as agent
 
 class VPG(agent.Agent):
+    """
+    A VPG agent. The intuition is to backpropogate onto the policy, resulting in the optimal policy
+    where we seek to maximize J = sum(rewards). Paper can be found here
+    https://papers.nips.cc/paper/1713-policy-gradient-methods-for-reinforcement-learning-with-function-approximation.pdf
+
+    The following heuristics are implemented:
+
+    -reward discount
+    -generalized advantage estimate
+    -normalized advantage
+    -baseline neural network for comparison
+    -reward to go
+    """
     @staticmethod
     def pathlengh(path):
         return len(path["reward"])
@@ -84,6 +96,9 @@ class VPG(agent.Agent):
 
             seed (int -- 0) :
                 random seed
+
+            logdir (~path (optional) -- None) :
+                directory to log reward
         """
 
         #Set random seed
